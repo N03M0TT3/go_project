@@ -1,0 +1,3 @@
+Changer les valeurs si dessous
+x;y;max_rebonds
+l;2;10
