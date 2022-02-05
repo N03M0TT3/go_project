@@ -5,20 +5,11 @@ import (
 	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"net"
 	"os"
 	"strconv"
 	"sync"
 )
-
-/*
-Remarques de PFR :
-- Enlever la récursion
-- Pas de variable hard codée et passer les vecteurs et le nombre de rebonds en paramètres
-- Pas d'intéractif
-- Gérer les erreurs
-*/
 
 // Constantes du programmes => modifiables pour changer les conditions des simulations
 var sizeWall int = 10
@@ -188,10 +179,7 @@ func addToFile(b *ball, targetX int, targetY int) {
 	file := fmt.Sprintf("result%d%d%d.csv", targetX, targetY, idSim)
 
 	CSVfile, err := os.OpenFile(file, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	errorHandler(err)
 
 	// Fermera le fichier plus tard
 	defer CSVfile.Close()
@@ -237,10 +225,7 @@ func main() {
 
 	// Mise en route du serveur
 	ln, err := net.Listen("tcp", ":1234")
-	if err != nil {
-		fmt.Println("Error listening:", err.Error())
-		os.Exit(1)
-	}
+	errorHandler(err)
 
 	defer ln.Close()
 
@@ -249,11 +234,7 @@ func main() {
 	for {
 
 		conn, err := ln.Accept()
-
-		if err != nil {
-			fmt.Println("Error accepting: ", err.Error())
-			os.Exit(1)
-		}
+		errorHandler(err)
 
 		go handleRequest(conn)
 
@@ -271,14 +252,17 @@ func handleRequest(conn net.Conn) {
 
 	data, err := reader.ReadString('\n')
 
-	if err != nil && err != io.EOF {
-		fmt.Println("Error reading:", err.Error())
+	if err != io.EOF {
+		fmt.Println("Error:", err.Error())
+		errorHandler(err)
 	}
 
 	fmt.Printf("La cible a atteindre pour cette simulation est le point (%c;%c)\n\n", data[0], data[1])
 
-	i, _ := strconv.Atoi(string(data[0]))
-	j, _ := strconv.Atoi(string(data[1]))
+	i, err := strconv.Atoi(string(data[0]))
+	errorHandler(err)
+	j, err := strconv.Atoi(string(data[1]))
+	errorHandler(err)
 
 	dataInt := []int{i, j}
 
@@ -309,18 +293,12 @@ func startSimulation(data []int, conn net.Conn) {
 	// Sends data on the connexion
 
 	f, err := os.Open(file)
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	errorHandler(err)
 
 	defer f.Close()
 
 	validBalls, err := csv.NewReader(f).ReadAll()
-
-	if err != nil {
-		log.Fatal(err)
-	}
+	errorHandler(err)
 
 	str := ""
 
@@ -332,6 +310,13 @@ func startSimulation(data []int, conn net.Conn) {
 	fmt.Println(str)
 	io.WriteString(conn, str)
 
+}
+
+func errorHandler(err error) {
+	if err != nil {
+		fmt.Printf("Error: %s", err)
+		panic(err)
+	}
 }
 
 // Tous les vecteurs différents testés pour chaque position du plan

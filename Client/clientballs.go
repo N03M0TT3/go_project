@@ -49,19 +49,17 @@ func main() {
 
 	// Connexion au serveur
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", IP, PORT))
-
-	if err != nil {
-		panic(err)
-	}
+	errorHandler(err)
 
 	reader := bufio.NewReader(conn)
 
-	message, _ := reader.ReadString('\n')
+	message, err := reader.ReadString('\n')
+	errorHandler(err)
 
 	fmt.Println(message)
 
 	parameters, err := os.Open("parameters.txt")
-	handlerErr(err)
+	errorHandler(err)
 
 	defer parameters.Close()
 
@@ -93,8 +91,9 @@ func readConn(conn net.Conn) {
 
 	d, err := r.ReadString('\n')
 
-	if err != nil && err != io.EOF {
+	if err != io.EOF {
 		fmt.Println("Error reading:", err.Error())
+		errorHandler(err)
 	}
 
 	analysis(d)
@@ -121,20 +120,12 @@ func analysis(data string) {
 		// On récupère la position horizontale
 		itemp := fmt.Sprintf("%c", ball[0])
 		i, err := strconv.Atoi(itemp)
-		if err != nil {
-			// handle error
-			fmt.Println(err)
-			os.Exit(2)
-		}
+		errorHandler(err)
 
 		// On récupère la position verticale
 		jtemp := fmt.Sprintf("%c", ball[1])
 		j, err := strconv.Atoi(jtemp)
-		if err != nil {
-			// handle error
-			fmt.Println(err)
-			os.Exit(2)
-		}
+		errorHandler(err)
 
 		//Création d'un point2D "sans" compteur
 		p := point2D{i, j, -1}
@@ -170,7 +161,7 @@ func checkParameters(data string) {
 	params := strings.Split(data, ";")
 
 	x, err := strconv.Atoi(params[0])
-	handlerErr(err)
+	errorHandler(err)
 
 	if reflect.TypeOf(x) != reflect.TypeOf(reflect.Int) {
 		fmt.Println("La position X n'est pas valide")
@@ -178,8 +169,9 @@ func checkParameters(data string) {
 	}
 }
 
-func handlerErr(err error) {
+func errorHandler(err error) {
 	if err != nil {
+		fmt.Printf("Error: %s", err)
 		panic(err)
 	}
 }
